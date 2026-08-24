@@ -1,0 +1,3 @@
+import 'package:flutter/material.dart';
+import '../models/transaction.dart';
+class TransactionItem extends StatelessWidget { const TransactionItem({super.key, required this.tx}); final TransactionModel tx; @override Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: tx.type == TransactionType.expense ? Colors.redAccent : Colors.greenAccent, child: Icon(tx.type == TransactionType.expense ? Icons.remove : Icons.add, color: Colors.black)), title: Text(tx.note.isEmpty ? tx.categoryId : tx.note), subtitle: Text(tx.dateTime.toString()), trailing: Text('${tx.type == TransactionType.expense ? '-' : '+'}Rp ${tx.amount.toStringAsFixed(0)}')); }
