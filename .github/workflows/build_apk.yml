@@ -1,40 +1,68 @@
-name: Build Android APK
+name: Build Android APK & Release
 
 on:
   push:
-    branches:
-      - "**"
+    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-apk:
+    name: Build & Release APK
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: "17"
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: 'stable'
           cache: true
+
+      - name: Create Platform Support if missing
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Creating Flutter Android platform configuration..."
+            flutter create . --platforms=android --org=com.akusara.fintrek
+          fi
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build Release APK
+        run: flutter build apk --release --split-per-abi=false
 
-      - name: Upload APK artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: finance-app-apk
+          name: fintrek-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "Fintrek Release v1.0.0"
+          body: |
+            ## 📱 Fintrek Personal Finance - Android APK
+            Aplikasi Personal Finance berbasis Google Sheets & Google Drive.
+
+            ### 🚀 Fitur Utama:
+            - Pencatatan Transaksi Cepat (Expense, Income, Transfer)
+            - Multi Wallet / Kantong Keuangan
+            - Visual Statistik & Activity Heatmap
+            - Otomatis Simpan & Sinkronisasi ke Google Drive/Sheets Pribadi
+            
+            **Download file APK di bawah ini dan langsung pasang di HP Android kamu!**
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
