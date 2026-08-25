@@ -1,17 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'models/app_state.dart';
+import 'screens/home_screen.dart';
+import 'screens/statistics_screen.dart';
+import 'screens/wallet_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/add_transaction_screen.dart';
+import 'services/local_db_service.dart';
 
-void main() => runApp(const FinanceDevApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final db = LocalDbService();
+  await db.init();
+  final state = AppState(db);
+  await state.loadInitialData();
 
-class FinanceDevApp extends StatelessWidget {
-  const FinanceDevApp({super.key});
+  runApp(
+    ChangeNotifierProvider.value(
+      value: state,
+      child: const FinanceApp(),
+    ),
+  );
+}
+
+class FinanceApp extends StatelessWidget {
+  const FinanceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Fintrek Finance',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B1020),
+        scaffoldBackgroundColor: const Color(0xFF090D16),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF6366F1),
           secondary: Color(0xFF22C55E),
@@ -19,117 +41,69 @@ class FinanceDevApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const DevHome(),
+      home: const MainNavigationScreen(),
     );
   }
 }
 
-class DevHome extends StatelessWidget {
-  const DevHome({super.key});
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    StatisticsScreen(),
+    SizedBox(), // Placeholder for center button
+    WalletScreen(),
+    ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                'Hi, Ollo!',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Dev mode scaffold ready',
-                style: TextStyle(color: Colors.white.withOpacity(0.65)),
-              ),
-              const SizedBox(height: 20),
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Quick Status', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    SizedBox(height: 10),
-                    Text('API URL connected'),
-                    SizedBox(height: 4),
-                    Text('Hot reload enabled'),
-                    SizedBox(height: 4),
-                    Text('Google Sheets backend ready'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: const [
-                  Expanded(child: _miniCard(title: 'Balance', value: 'Rp 0')),
-                  SizedBox(width: 12),
-                  Expanded(child: _miniCard(title: 'Income', value: 'Rp 0')),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: const [
-                  Expanded(child: _miniCard(title: 'Expense', value: 'Rp 0')),
-                  SizedBox(width: 12),
-                  Expanded(child: _miniCard(title: 'Sync', value: 'Ready')),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Next step', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Ganti isi screen ini kapan saja.\n\nPencet r di terminal Flutter buat hot reload.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.78), height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: _screens[_currentIndex],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF6366F1),
+        shape: const CircleBorder(),
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: const Color(0xFF121A2E),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            builder: (_) => const AddTransactionScreen(),
+          );
+        },
+        child: const Icon(Icons.add, size: 30, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex == 2 ? 0 : _currentIndex,
+        onTap: (index) {
+          if (index != 2) {
+            setState(() => _currentIndex = index);
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF0D1322),
+        selectedItemColor: const Color(0xFF6366F1),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Statistics'),
+          BottomNavigationBarItem(icon: SizedBox(height: 24), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Wallet'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+        ],
       ),
     );
   }
-
-  Widget _card({required Widget child}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF121A2E),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-        ),
-        child: child,
-      );
-}
-
-class _miniCard extends StatelessWidget {
-  const _miniCard({required this.title, required this.value});
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF121A2E),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          ],
-        ),
-      );
 }
