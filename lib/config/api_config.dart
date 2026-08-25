@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+  static const String baseUrl = 'https://script.google.com/macros/s/AKfycbyomneX_ZtyxTsbaYgULDcXuqhF65g1oXT5uGejCVoG7GPm_Kq1JOYB958ONcN9uJaC8Q/exec';
   static const String googleSheetName = 'Finance';
-  static const bool enableRemoteSync = false;
+  static const bool enableRemoteSync = true;
 }
